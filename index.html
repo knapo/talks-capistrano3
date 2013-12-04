@@ -43,168 +43,79 @@
 				</section>
 
 				<section>
-					<h2>sending email in rails apps - asynchronus or not?</h2>
-					<h2 class="fragment">it depends...</h2>
+					<h2>the first major release of Capistrano in almost 5 years</h2>
+					<h3 class="fragment">significant changes might make a lot of sites offline, and make a lot of people very...unhappy</h3>
 				</section>
 
 				<section>
-					<h2>in our case: YES</h2>
-					<h2 class="fragment">but....how?</h2>
+					<h2>Design goals</h2>
+					<ul>
+						<li class="fragment">Get away from custom DSL solution</li>
+						<li class="fragment">Better modularisation to make it more useful for non-rails apps (assets, db migrations)</li>
+						<li class="fragment">Better modularisation to make it more useful for non-rails apps (assets, db migrations)</li>
+						<li class="fragment">Easier Debugging (PTY, TTY, login shels, non-login shells, rvm rbenv)</li>
+						<li class="fragment">Speed (better support for parallelism, rolling restarts)</li>
+						<li class="fragment">Applicability (integration with chef, puupet)</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>What's new?</h2>
+				</section>
+
+				<section>
+					<h3>better modularization &amp; Rake tasks and DSL<h3>
+					<p>
+						<img src="./img/gemfile.png" />
+					</p>
+				</section>
+
+				<section>
+					<h3>better modularization &amp; Rake integration<h3>
+					<p>
+						<img src="./img/capfile.png"/>
+					</p>
+				</section>
+
+				<section>
+					<pre><code data-trim style="text-decoration:line-through">bundle exec capify .</code></pre>
+					<pre><code data-trim>bundle exec cap install</code></pre>
 				</section>	
 
 				<section>
-					<h2>redis + resque_mailer?</h2>
-					<h2 class="fragment">NO.</h2>
-					<ul>
-						<li class="fragment">
-							no VM &amp; swapping, good for small and not very important data.
-						</li>
-						<li class="fragment">
-							requires extra implementation: <br>
-							<img src="./img/resque.png"/>
-						</li>
-					</ul>
+					<h2>Built-In Stage Support</h2>
+					<pre><code data-trim>bundle exec cap install STAGES=staging,production</code></pre>
 				</section>
 
 				<section>
-					<h2>delayed_job?</h2>
-					<h2 class="fragment">NO.</h2>
-					<ul>
-						<li class="fragment">
-							queue in SQL - possible.............
-						</li>
-						<li class="fragment">
-							requires extra implementation: <br>
-							<img src="./img/delayed_job.png"/>
-						</li>
-					</ul>
+					<h2>Better magic variables support</h2>
+					<pre><code data-trim style="text-decoration:line-through">set(:bundle_cmd) { File.join(bundle_dir, 'bin/bundle') }</code></pre>
+					<pre><code>set :bundle_cmd, -> { File.join(fetch(:bundle_dir), 'bin/bundle') }</code></pre>
+					<pre><code>set :application, 'massmailer'</code></pre>
+					<pre><code>fetch :mieso_type, 'kiełbasa'</code></pre>
 				</section>
 
 				<section>
-					<h2>none of existing solutions offers emergency/backup/secondary delivery method in case failure</h2>
+					<h2>auto magic stuff</h2>
+<pre><code data-trim>
+fetch(:default_env).merge!(rails_env: :production)
+set :linked_files, %w{config/database.yml}
+set :linked_dirs, %w{pids log public/system}
+</code></pre>
 				</section>
-
+				
 				<section>
-					<h2>custom RabbitMQ solution?</h2>
-					<ul>
-						<li class="fragment">
-							powerful, but over complicated
-						</li>
-					</ul>
-				</section>
-
-				<section>
+					<h3>SSHKit</h3>
+					<p>helpers, command mapping, logging etc</p>
 					<p>
-						<img src="./img/blog_post.png" style="height: 400px"/>
+						<img src="./img/rake.png" />
 					</p>
-					<a href="https://blog.serverdensity.com/replacing-rabbitmq-with-mongodb/">
-						https://blog.serverdensity.com/replacing-rabbitmq-with-mongodb
-					</a>
 				</section>
 
-						<section>
-							<h2>why mongo?</h2>
-							<ul>
-								<li>swapping</li>
-								<li>journaling</li>
-								<li>atomic <code>findAndModify</code> operation</li>
-								<li>performing and scalable</li>
-							</ul>
-						</section>
+				<section>
+					<h2>questions?</h2>
+				</section>
 
-						<section>
-							<h2>mongo_mailer</h2>
-							<br>
-							<p>
-								<a href="https://github.com/infakt/mongo_mailer">
-									github.com/infakt/mongo_mailer
-								</a>
-							</p>
-						</section>
-
-						<section>
-							<h2>mongo_mailer components</h2>
-							<br>
-							<ul>
-								<li class="fragment">
-									rails plugin providing <code>ActionMailer</code> delivery method, generators &amp; capistrano recipies
-								</li>							
-								<li class="fragment">
-									(standalone) worker with base and emergency delivery method
-								</li>
-							</ul>			
-						</section>
-
-						<section>
-							<h2>rails plugin</h2>	
-							<br>
-<pre><code data-trim>
-# Gemfile
-gem 'mongo_mailer', require: 'mongo_mailer/rails'
-</code></pre>
-<pre class="fragment" style="margin-top:40px"><code data-trim>
-# environment file
-config.action_mailer.delivery_method :mongo_queue
-</code></pre>
-<pre class="fragment" style="margin-top:40px"><code data-trim>
-$ bundle exec rails generate mongo_mailer		
-#=> config/mongo_mailer.yml.example
-</code></pre>							
-<pre class="fragment" style="margin-top:40px"><code data-trim>
-# config/deploy.rb
-require 'mongo_mailer/capistrano'
-</code>
-<code data-trim>
-$ cap mongo_mailer:start|stop|restart
-</code></pre>
-						</section>
-
-						<section>
-							<h2>(standalone) worker</h2>		
-							<br>						
-<pre><code data-trim>
-# rails app
-$ bundle exec mongo_mailer start|stop|restart
-</code></pre>					
-<pre style="margin-top:40px"><code data-trim>
-# independent app
-$ bundle exec worker start|stop|restart
-</code></pre>
-						</section>
-
-						<section>
-							<h2>base and emergency delivery methods</h2>
-							<p>config/mongo_mailer.yml<p>
-<pre><code class="yml">base_delivery_method: smtp
-base_delivery_settings:
-  user_name: "username"
-  password: "apikey"
-  domain: "example.com"
-  address: "smtp1.example.com"
-  port: 587
-  authentication: plain
-
-emergency_delivery_method: smtp
-emergency_delivery_settings:
-user_name: "username"
-  password: "apikey"
-  domain: "example.com"
-  address: "smtp2.example.com"
-  port: 587
-  authentication: plain
-</code></pre>
-							</section>
-							<section>
-								<h1>thank you!</h1>
-								<br>
-								<h4>
-									slides:
-									<br>
-									<a href="http://knapo.github.io/rails-israel-2013-mongo-mailqueue-rails/">
-										http://knapo.github.io/rails-israel-2013-mongo-mailqueue-rails/
-									</a>
-								</h4>
-							</section>
 						</div>
 
 					</div>
