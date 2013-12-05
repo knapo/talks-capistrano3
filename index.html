@@ -64,18 +64,54 @@
 				</section>
 
 				<section>
-					<h3>better modularization &amp; Rake tasks and DSL<h3>
+					<h3>modularization &amp; Rake integration<h3>
+					<p>
+						<img src="./img/capfile.png"/>
+					</p>
+				</section>
+
+				<section>
+					<h3>Rake raska &amp; DSL<h3>
 					<p>
 						<img src="./img/gemfile.png" />
 					</p>
 				</section>
 
 				<section>
-					<h3>better modularization &amp; Rake integration<h3>
+					<h3>Rake tasks &amp; DSL</h3>
+					<p>helpers, command mapping, logging etc</p>
 					<p>
-						<img src="./img/capfile.png"/>
+						<img src="./img/rake.png" />
 					</p>
 				</section>
+				<section>
+					<h3>Rake tasks &amp; DSL</h3>
+
+<pre><code data-trim>
+desc "Notify service of deployment"
+task :notify do
+  run_locally do
+    with rails_env: :development do
+      rake 'service:notify'
+    end
+  end
+end
+</code></pre>
+				</section>
+				<section>
+					<h3>Rake tasks &amp; DSL</h3>
+
+<pre><code data-trim>
+desc "Ask about breakfast"
+task :breakfast do
+  ask(:breakfast, "kiełbasa")
+  on roles(:all) do |h|
+    execute "echo \"$(whoami) wants #{fetch(:breakfast)} for breakfast!\""
+  end
+end
+</code></pre>
+				</section>
+
 
 				<section>
 					<pre><code data-trim style="text-decoration:line-through">bundle exec capify .</code></pre>
@@ -105,13 +141,41 @@ set :linked_dirs, %w{pids log public/system}
 				</section>
 				
 				<section>
-					<h3>SSHKit</h3>
-					<p>helpers, command mapping, logging etc</p>
-					<p>
-						<img src="./img/rake.png" />
-					</p>
-				</section>
+<pre><code data-trim>
+on :all, in: :groups, max: 3, wait: 5 do
+  # Take all servers, in groups of three which execute in parallel
+  # wait five seconds between groups of servers.
+  # This is perfect for rolling restarts
+end
 
+on :all, in: :sequence, wait: 15 do
+  # This takes all servers, in sequence and waits 15 seconds between
+  # each server, this might be perfect if you are afraid about
+  # overloading a shared resource, or want to defer the asset compilation
+  # over your cluster owing to worries about load
+end
+
+on :all, in: :parallel do
+  # This will simply try and execute the commands contained within
+  # the block in parallel on all servers. This might be perfect for kicking
+  # off something like a Git checkout or similar.
+end
+</code></pre>
+				</section>
+				<section>
+					<h3>SSHKit</h3>
+<pre><code data-trim>
+require 'sshkit/dsl'
+on %w{knapo.net knapo2.net}, in: :sequence, wait: 5 do
+  within "/home/knapo" do
+    with rails_env: :production do
+      rake   "db:migrate"
+      runner "S3::Sync.notify"
+    end
+  end
+end
+</code></pre>
+				</section>
 				<section>
 					<h2>questions?</h2>
 				</section>
